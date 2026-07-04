@@ -49,14 +49,19 @@ however much history you expect, 2 columns wide), type the formula, and
 press **Ctrl+Shift+Enter** (classic array-formula entry — this LibreOffice
 build doesn't auto-spill a single-cell formula). Unused rows in the
 selected range show `#N/A`, same as any array formula that returns fewer
-rows than selected. The date column returns Calc date serial numbers; you
-*can* format it as a date via Format ▸ Cells, but note that all cells in
-one array formula share a single number format — formatting the date
-column this way also reformats the value column as dates. If you want the
-two columns formatted independently, convert the array to static values
-first (Copy, then Paste Special ▸ Values Only), or use the `FredDumpSeries`
-macro below instead, which writes independently-formatted static cells
-from the start.
+rows than selected.
+
+The date column returns Calc date serial numbers, not a date-formatted
+cell — and formatting it via Format ▸ Cells doesn't work cleanly, because
+all cells in one array formula share a single number format, so
+formatting just the date column also reformats the value column as dates.
+Instead, add a plain helper column next to it with
+`=TEXT(A1;"YYYY-MM-DD")` (an ordinary formula, unaffected by the array's
+shared format) to get a readable date string — see the demo below for a
+worked example. Alternatively, convert the whole array to static values
+first (Copy, then Paste Special ▸ Values Only) so each cell can be
+formatted independently, or use the `FredDumpSeries` macro below instead,
+which writes independently-formatted static cells from the start.
 
 ```
 =FRED.SERIES("GDP"; "2020-01-01")               -> quarterly GDP from 2020 to now

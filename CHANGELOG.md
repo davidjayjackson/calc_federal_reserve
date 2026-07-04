@@ -19,3 +19,6 @@
   once written.
 - Updated `examples/FRED_Demo.ods` with a `FRED.SERIES` array-formula
   example (quarterly GDP history).
+- Fixed the demo's `FRED.SERIES` date column being unreadable (raw serial
+  numbers): added a `TEXT()` helper column, since formatting the array's
+  date column directly via `NumberFormat` also reformats its value column.

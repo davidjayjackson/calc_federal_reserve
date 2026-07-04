@@ -105,18 +105,28 @@ reformatted as a date by the add-in, since a UNO Add-In function has no way
 to set the number format of the cell it's called from — that's on the
 user, via Format ▸ Cells.
 
-**All cells in one array-formula block share a single number format** —
-you cannot format the date column of a `FRED.SERIES` result as a date
-while leaving the value column as a plain number; setting `NumberFormat`
-on any cell in the block reformats the whole block. Found this the hard
-way building the demo's `FRED.SERIES` section: formatting just column A
-as a date silently reformatted column B's GDP values as dates too (a
-value like `27216.445` displayed as `1974-07-06`, i.e. that many days
-after the Calc epoch). `tools/build_demo.py` deliberately leaves the date
-column as raw serials for this reason, with a comment explaining why —
-don't try to "fix" that by adding a NumberFormat call back in. The
-workaround, if you need it, is Paste Special → Values Only first (breaks
-the array into independent static cells, which then format independently).
+**Setting `NumberFormat` on one cell of an array-formula block propagates
+to the whole block** — you cannot format just the date column of a
+`FRED.SERIES` result while leaving the value column as a plain number.
+Found this the hard way building the demo's `FRED.SERIES` section:
+formatting column A as a date silently reformatted column B's GDP values
+as dates too (`27216.445` displayed as `1974-07-06`, i.e. that many days
+after the Calc epoch). Reproduced with plain unrelated numbers (a 3x2
+array of `=A1:B3*1`) to confirm it's an array-formula quirk, not something
+specific to `FRED.SERIES` - and it isn't simple format-copying either: only
+D1 (the cell actually touched) got the exact format code set on it, while
+every other cell in the block silently picked up a *different* auto-guessed
+date/time format. Read this as "don't touch `NumberFormat` on any cell of
+an array-formula range unless you want the whole block visually
+reinterpreted," not as "cells in an array share one deliberate format."
+
+The fix used in `tools/build_demo.py`: leave the array's raw date column
+unformatted, and add a *separate*, ordinary (non-array) helper column with
+`=TEXT($A1;"YYYY-MM-DD")` for a readable date string - `TEXT()` returns a
+plain string, so it's a normal per-cell formula unaffected by the array's
+shared-format behavior. Converting the array to static values first (Copy,
+Paste Special → Values Only) also works, since that removes the array
+grouping entirely and each cell can then be formatted independently.
 
 **`registration/CalcAddIns.xcu` is what actually populates the Function
 Wizard** — display names, descriptions, category ("Add-In"), and
