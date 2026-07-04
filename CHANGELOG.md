@@ -17,3 +17,5 @@
   Basic macro that dumps a series into the sheet as static values instead
   of a live formula - no ongoing dependency on the add-in, network, or key
   once written.
+- Updated `examples/FRED_Demo.ods` with a `FRED.SERIES` array-formula
+  example (quarterly GDP history).

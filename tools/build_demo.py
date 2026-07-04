@@ -125,6 +125,43 @@ def main():
     value_cell.setFormula(
         '=FRED.VALUE($A%d;$C%d;%s)' % (label_row + 1, label_row + 1, key_cell_ref))
 
+    # A third example: pulling a whole range as an array formula. FRED.SERIES
+    # returns a matrix, so it must be entered via setArrayFormula (the UI
+    # equivalent is: select the range, type the formula, Ctrl+Shift+Enter -
+    # this LibreOffice build doesn't auto-spill a single-cell array result).
+    series_note_row = label_row + 3
+    note2 = sheet.getCellByPosition(0, series_note_row)
+    note2.setString(
+        "Array formula: FRED.SERIES(series_id; start_date; [end_date]; [api_key]) "
+        "- select the range first, then Ctrl+Shift+Enter"
+    )
+    set_bold(note2)
+
+    series_sub_row = series_note_row + 1
+    sheet.getCellByPosition(0, series_sub_row).setString(
+        "GDP, quarterly, from 2023-01-01 (date column left as raw serials - "
+        "see note below on why)")
+
+    series_header_row = series_note_row + 2
+    date_header = sheet.getCellByPosition(0, series_header_row)
+    date_header.setString("Date")
+    set_bold(date_header)
+    value_header = sheet.getCellByPosition(1, series_header_row)
+    value_header.setString("Value")
+    set_bold(value_header)
+
+    series_data_start = series_header_row + 1
+    series_data_rows = 8
+    series_range = sheet.getCellRangeByName(
+        "A%d:B%d" % (series_data_start + 1, series_data_start + series_data_rows))
+    series_range.setArrayFormula(
+        '=FRED.SERIES("GDP";"2023-01-01";;%s)' % key_cell_ref)
+    # Deliberately not formatting column A as a date here: all cells in a
+    # single array-formula block share one number format in Calc, so
+    # formatting just the date column also reformats the value column as
+    # dates (discovered the hard way - see CLAUDE.md). Paste Special >
+    # Values Only first if you want the date column formatted independently.
+
     # Column widths for readability.
     widths = [2500, 9000, 3500, 2500, 4000, 3000]
     for col, w in enumerate(widths):

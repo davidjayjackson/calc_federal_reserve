@@ -105,6 +105,19 @@ reformatted as a date by the add-in, since a UNO Add-In function has no way
 to set the number format of the cell it's called from — that's on the
 user, via Format ▸ Cells.
 
+**All cells in one array-formula block share a single number format** —
+you cannot format the date column of a `FRED.SERIES` result as a date
+while leaving the value column as a plain number; setting `NumberFormat`
+on any cell in the block reformats the whole block. Found this the hard
+way building the demo's `FRED.SERIES` section: formatting just column A
+as a date silently reformatted column B's GDP values as dates too (a
+value like `27216.445` displayed as `1974-07-06`, i.e. that many days
+after the Calc epoch). `tools/build_demo.py` deliberately leaves the date
+column as raw serials for this reason, with a comment explaining why —
+don't try to "fix" that by adding a NumberFormat call back in. The
+workaround, if you need it, is Paste Special → Values Only first (breaks
+the array into independent static cells, which then format independently).
+
 **`registration/CalcAddIns.xcu` is what actually populates the Function
 Wizard** — display names, descriptions, category ("Add-In"), and
 per-argument help text. The `XAddIn` methods on `FredAddIn`

@@ -49,8 +49,14 @@ however much history you expect, 2 columns wide), type the formula, and
 press **Ctrl+Shift+Enter** (classic array-formula entry — this LibreOffice
 build doesn't auto-spill a single-cell formula). Unused rows in the
 selected range show `#N/A`, same as any array formula that returns fewer
-rows than selected. The date column returns Calc date serial numbers —
-format it as a date via Format ▸ Cells for readability.
+rows than selected. The date column returns Calc date serial numbers; you
+*can* format it as a date via Format ▸ Cells, but note that all cells in
+one array formula share a single number format — formatting the date
+column this way also reformats the value column as dates. If you want the
+two columns formatted independently, convert the array to static values
+first (Copy, then Paste Special ▸ Values Only), or use the `FredDumpSeries`
+macro below instead, which writes independently-formatted static cells
+from the start.
 
 ```
 =FRED.SERIES("GDP"; "2020-01-01")               -> quarterly GDP from 2020 to now
@@ -136,10 +142,11 @@ once written. Re-run `tools/install_macro.py` any time you update
 
 ## Demo
 
-`examples/FRED_Demo.ods` shows both functions in use: a table of popular
-series (GDP, UNRATE, CPIAUCSL, FEDFUNDS, DGS10, PAYEMS) with their title,
-units, frequency, latest value and last-updated timestamp, plus an
-as-of-date lookup example. Cell `B3` is a blank slot for your API key that
+`examples/FRED_Demo.ods` shows all three functions in use: a table of
+popular series (GDP, UNRATE, CPIAUCSL, FEDFUNDS, DGS10, PAYEMS) with their
+title, units, frequency, latest value and last-updated timestamp; an
+as-of-date lookup example; and a `FRED.SERIES` array formula pulling
+quarterly GDP history. Cell `B3` is a blank slot for your API key that
 every formula in the sheet passes as its `api_key` argument.
 
 Note that Calc always recalculates Add-In function cells on open (they're
