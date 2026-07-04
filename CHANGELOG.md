@@ -10,3 +10,6 @@
 - Added an optional trailing `api_key` argument to both functions, so a key
   can be passed directly in the formula as an alternative to the
   `FRED_API_KEY` environment variable.
+- Added `FRED.SERIES(series_id; start_date; [end_date]; [api_key])`,
+  returning a whole range of observations as a (date, value) matrix for use
+  as an array formula.

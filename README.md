@@ -36,6 +36,27 @@ Looks up a metadata field describing a FRED series. `field` defaults to
 =FRED.DESCRIPTION("GDP"; "units") -> "Billions of Dollars"
 ```
 
+```
+FRED.SERIES(series_id; start_date; [end_date]; [api_key])
+```
+Looks up a range of observations as a two-column (date, value) matrix,
+oldest first. `start_date` is required; `end_date` defaults to the most
+recent available observation. `api_key` behaves the same as in
+`FRED.VALUE`.
+
+This returns multiple rows, so **select a range first** (enough rows for
+however much history you expect, 2 columns wide), type the formula, and
+press **Ctrl+Shift+Enter** (classic array-formula entry — this LibreOffice
+build doesn't auto-spill a single-cell formula). Unused rows in the
+selected range show `#N/A`, same as any array formula that returns fewer
+rows than selected. The date column returns Calc date serial numbers —
+format it as a date via Format ▸ Cells for readability.
+
+```
+=FRED.SERIES("GDP"; "2020-01-01")               -> quarterly GDP from 2020 to now
+=FRED.SERIES("UNRATE"; "2023-01-01"; "2023-12-31") -> monthly unemployment rate, 2023 only
+```
+
 Series IDs are the short codes FRED uses on each series' page, e.g.
 [`GDP`](https://fred.stlouisfed.org/series/GDP),
 [`UNRATE`](https://fred.stlouisfed.org/series/UNRATE),
@@ -84,9 +105,9 @@ C++/Java compiler needed):
 unopkg add --force build/CalcFredAddin.oxt
 ```
 
-Restart LibreOffice after installing. `FRED.VALUE` and `FRED.DESCRIPTION`
-will then appear in the Function Wizard under the "Add-In" category and in
-formula autocomplete.
+Restart LibreOffice after installing. `FRED.VALUE`, `FRED.DESCRIPTION` and
+`FRED.SERIES` will then appear in the Function Wizard under the "Add-In"
+category and in formula autocomplete.
 
 To remove: `unopkg remove com.example.fred`.
 

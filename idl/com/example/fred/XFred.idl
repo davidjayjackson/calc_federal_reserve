@@ -51,6 +51,38 @@ module com { module example { module fred {
                 the requested metadata field, as text.
          */
         string description( [in] string seriesId, [in] any field, [in] any apiKey );
+
+        /** Looks up a range of FRED series observations as a two-column
+            matrix (date, value), sorted chronologically ascending -
+            suitable for a spilled array formula or a chart data source.
+
+            @param seriesId
+                the FRED series ID, e.g. "GDP", "UNRATE", "CPIAUCSL".
+
+            @param startDate
+                the earliest observation date to include, as a Calc date
+                value or an "YYYY-MM-DD" string. Declared as <em>any</em>
+                for type flexibility, but required (an error is raised if
+                omitted).
+
+            @param endDate
+                optional. The latest observation date to include. Declared
+                as <em>any</em> so it may be omitted, in which case
+                observations continue through the most recent one
+                available.
+
+            @param apiKey
+                optional. A FRED API key. Declared as <em>any</em> so it may
+                be omitted, in which case the FRED_API_KEY environment
+                variable is used instead.
+
+            @returns
+                a matrix of rows, each [date, value], oldest first. Calc
+                date values are returned for the date column. Missing
+                observations (marked "." by FRED) are skipped.
+         */
+        sequence< sequence< any > > series(
+            [in] string seriesId, [in] any startDate, [in] any endDate, [in] any apiKey );
     };
 
 }; }; };

@@ -2,8 +2,9 @@
 # as Calc spreadsheet functions via a real UNO Add-In (so they appear in
 # the Function Wizard and autocomplete). See README.md for setup.
 #
-# FRED.VALUE(series_id; [date])
-# FRED.DESCRIPTION(series_id; [field])
+# FRED.VALUE(series_id; [date]; [api_key])
+# FRED.DESCRIPTION(series_id; [field]; [api_key])
+# FRED.SERIES(series_id; start_date; [end_date]; [api_key])
 #
 # API docs: https://fred.stlouisfed.org/docs/api/fred/
 
@@ -134,6 +135,35 @@ def _fetch_value(series_id, iso_date, api_key):
     raise FredError("no observations found for series '%s'%s" % (series_id, where))
 
 
+def _fetch_series(series_id, iso_start, iso_end, api_key):
+    params = {
+        "series_id": series_id,
+        "api_key": api_key,
+        "file_type": "json",
+        "sort_order": "asc",
+        "observation_start": iso_start,
+    }
+    if iso_end:
+        params["observation_end"] = iso_end
+    url = "%s/series/observations?%s" % (API_BASE, urllib.parse.urlencode(params))
+    data = _cached_get(url, OBSERVATIONS_CACHE_TTL)
+
+    rows = []
+    for obs in data.get("observations", []):
+        # FRED marks missing/not-yet-released observations with ".".
+        if obs.get("value") in (None, "."):
+            continue
+        obs_date = datetime.date.fromisoformat(obs["date"])
+        rows.append([float((obs_date - CALC_EPOCH).days), float(obs["value"])])
+
+    if not rows:
+        raise FredError(
+            "no observations found for series '%s' between %s and %s"
+            % (series_id, iso_start, iso_end or "now")
+        )
+    return rows
+
+
 def _fetch_description(series_id, field, api_key):
     field = (field or "title").strip().lower()
     if field not in DESCRIPTION_FIELDS:
@@ -154,7 +184,7 @@ def _fetch_description(series_id, field, api_key):
 
 
 class FredAddIn(unohelper.Base, XFred, XAddIn, XServiceName):
-    """Implementation of the FRED.VALUE / FRED.DESCRIPTION spreadsheet functions."""
+    """Implementation of the FRED.VALUE / FRED.DESCRIPTION / FRED.SERIES spreadsheet functions."""
 
     def __init__(self, ctx):
         self.ctx = ctx
@@ -169,21 +199,40 @@ class FredAddIn(unohelper.Base, XFred, XAddIn, XServiceName):
         return _fetch_description(
             seriesId.strip().upper(), field, _resolve_api_key(apiKey))
 
+    def series(self, seriesId, startDate, endDate, apiKey):
+        if startDate is None:
+            raise FredError("startDate is required")
+        return _fetch_series(
+            seriesId.strip().upper(),
+            _as_iso_date(startDate),
+            _as_iso_date(endDate),
+            _resolve_api_key(apiKey),
+        )
+
     # --- XAddIn -------------------------------------------------------------
     # Function/argument metadata is supplied by CalcAddIns.xcu, so these
     # return the programmatic names (or empty strings) as a safe fallback.
     def getProgrammaticFuntionName(self, aDisplayName):  # UNO API spelling
-        names = {"FRED.VALUE": "value", "FRED.DESCRIPTION": "description"}
+        names = {
+            "FRED.VALUE": "value",
+            "FRED.DESCRIPTION": "description",
+            "FRED.SERIES": "series",
+        }
         return names.get(aDisplayName, "")
 
     def getDisplayFunctionName(self, aProgrammaticName):
-        names = {"value": "FRED.VALUE", "description": "FRED.DESCRIPTION"}
+        names = {
+            "value": "FRED.VALUE",
+            "description": "FRED.DESCRIPTION",
+            "series": "FRED.SERIES",
+        }
         return names.get(aProgrammaticName, "")
 
     def getFunctionDescription(self, aProgrammaticName):
         descs = {
             "value": "Looks up a FRED series observation, on or before an optional date.",
             "description": "Looks up a metadata field describing a FRED series.",
+            "series": "Looks up a range of FRED series observations as a (date, value) matrix.",
         }
         return descs.get(aProgrammaticName, "")
 
@@ -191,6 +240,7 @@ class FredAddIn(unohelper.Base, XFred, XAddIn, XServiceName):
         names = {
             "value": ("series_id", "date", "api_key"),
             "description": ("series_id", "field", "api_key"),
+            "series": ("series_id", "start_date", "end_date", "api_key"),
         }
         args = names.get(aProgrammaticName, ())
         return args[nArgument] if 0 <= nArgument < len(args) else ""
@@ -211,6 +261,13 @@ class FredAddIn(unohelper.Base, XFred, XAddIn, XServiceName):
                 "Optional. Metadata field: title (default), units, units_short, frequency, "
                 "frequency_short, seasonal_adjustment, seasonal_adjustment_short, notes, "
                 "last_updated, observation_start, observation_end, popularity.",
+                api_key_desc,
+            ),
+            "series": (
+                "The FRED series ID, e.g. \"GDP\", \"UNRATE\", \"CPIAUCSL\".",
+                "The earliest observation date to include.",
+                "Optional. The latest observation date to include. Defaults to the most "
+                "recent available observation.",
                 api_key_desc,
             ),
         }

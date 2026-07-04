@@ -87,6 +87,54 @@
             </node>
           </node>
         </node>
+        <node oor:name="series" oor:op="replace">
+          <prop oor:name="DisplayName">
+            <value xml:lang="en">FRED.SERIES</value>
+          </prop>
+          <prop oor:name="Description">
+            <value xml:lang="en">Looks up a range of FRED series observations as a (date, value) matrix.</value>
+          </prop>
+          <prop oor:name="Category">
+            <value>Add-In</value>
+          </prop>
+          <prop oor:name="CompatibilityName">
+            <value xml:lang="en">FRED.SERIES</value>
+          </prop>
+          <node oor:name="Parameters">
+            <node oor:name="seriesId" oor:op="replace">
+              <prop oor:name="DisplayName">
+                <value xml:lang="en">series_id</value>
+              </prop>
+              <prop oor:name="Description">
+                <value xml:lang="en">The FRED series ID, e.g. "GDP", "UNRATE", "CPIAUCSL".</value>
+              </prop>
+            </node>
+            <node oor:name="startDate" oor:op="replace">
+              <prop oor:name="DisplayName">
+                <value xml:lang="en">start_date</value>
+              </prop>
+              <prop oor:name="Description">
+                <value xml:lang="en">The earliest observation date to include.</value>
+              </prop>
+            </node>
+            <node oor:name="endDate" oor:op="replace">
+              <prop oor:name="DisplayName">
+                <value xml:lang="en">end_date</value>
+              </prop>
+              <prop oor:name="Description">
+                <value xml:lang="en">Optional. The latest observation date to include. Defaults to the most recent available observation.</value>
+              </prop>
+            </node>
+            <node oor:name="apiKey" oor:op="replace">
+              <prop oor:name="DisplayName">
+                <value xml:lang="en">api_key</value>
+              </prop>
+              <prop oor:name="Description">
+                <value xml:lang="en">Optional. A FRED API key. Defaults to the FRED_API_KEY environment variable.</value>
+              </prop>
+            </node>
+          </node>
+        </node>
       </node>
     </node>
   </node>

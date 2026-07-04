@@ -4,14 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Two Calc functions, `FRED.VALUE()` and `FRED.DESCRIPTION()`, that pull
-economic data and series metadata from FRED (Federal Reserve Bank of St.
-Louis, https://fred.stlouisfed.org/) directly into a spreadsheet. Like
-`../calc_loess_addin`, this is implemented as a real UNO Add-In
-(`com.sun.star.sheet.AddIn`) in Python (`src/fred_impl.py`), not a Basic
-macro — that's what gets the functions into the Function Wizard and formula
-autocomplete, which are driven by `com.sun.star.sheet.FunctionDescriptions`
-and only enumerate real, registered Add-Ins.
+Three Calc functions, `FRED.VALUE()`, `FRED.DESCRIPTION()` and
+`FRED.SERIES()`, that pull economic data and series metadata from FRED
+(Federal Reserve Bank of St. Louis, https://fred.stlouisfed.org/) directly
+into a spreadsheet. Like `../calc_loess_addin`, this is implemented as a
+real UNO Add-In (`com.sun.star.sheet.AddIn`) in Python
+(`src/fred_impl.py`), not a Basic macro — that's what gets the functions
+into the Function Wizard and formula autocomplete, which are driven by
+`com.sun.star.sheet.FunctionDescriptions` and only enumerate real,
+registered Add-Ins.
 
 ## Commands
 
@@ -46,7 +47,7 @@ soffice --headless --invisible --norestore --accept="socket,host=localhost,port=
 /usr/lib64/libreoffice/program/python tools/test_addin.py
 ```
 
-The test always checks that both functions are registered in
+The test always checks that all three functions are registered in
 `FunctionDescriptions`. It only drives a live formula against the real FRED
 API if `FRED_API_KEY` is set in the environment the test process runs in
 (same env-var requirement as the add-in itself — see README.md).
@@ -93,6 +94,16 @@ scratch anyway and shows `#VALUE!` if no key is available at that moment.
 `tools/build_demo.py` still computes real values during the build (as a
 sanity check that the sheet actually works), but don't expect that to
 translate into cached values a user sees without their own key.
+
+**`FRED.SERIES` returns `sequence<sequence<any>>`** (a matrix), not a
+scalar, so it must be entered as a classic array formula (select the
+target range, type the formula, Ctrl+Shift+Enter) — this LibreOffice build
+doesn't spill a single-cell array-result formula automatically. Its date
+column is converted to a Calc serial number via `CALC_EPOCH` (the reverse
+of what `_as_iso_date` does for input dates); the cell itself isn't
+reformatted as a date by the add-in, since a UNO Add-In function has no way
+to set the number format of the cell it's called from — that's on the
+user, via Format ▸ Cells.
 
 **`registration/CalcAddIns.xcu` is what actually populates the Function
 Wizard** — display names, descriptions, category ("Add-In"), and

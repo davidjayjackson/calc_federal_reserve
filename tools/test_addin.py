@@ -9,11 +9,11 @@ headless instance listening on a UNO socket:
 Prints RESULT: PASS / FAIL and exits non-zero on failure. Requires the
 extension to already be installed (see build_addin.sh + `unopkg add`).
 
-Always checks that FRED.VALUE / FRED.DESCRIPTION are registered as real
-Add-Ins (proves Function Wizard/autocomplete wiring). If FRED_API_KEY is
-set in the environment this process was launched from, it also drives a
-live formula against the real FRED API; otherwise that part is skipped
-since there is no key to call out with.
+Always checks that FRED.VALUE / FRED.DESCRIPTION / FRED.SERIES are
+registered as real Add-Ins (proves Function Wizard/autocomplete wiring). If
+FRED_API_KEY is set in the environment this process was launched from, it
+also drives live formulas against the real FRED API; otherwise that part is
+skipped since there is no key to call out with.
 """
 import os
 import sys
@@ -41,7 +41,7 @@ def main():
     smgr = ctx.ServiceManager
     desktop = smgr.createInstanceWithContext("com.sun.star.frame.Desktop", ctx)
 
-    # 1. FRED.VALUE / FRED.DESCRIPTION are registered as real Add-Ins.
+    # 1. FRED.VALUE / FRED.DESCRIPTION / FRED.SERIES are registered as real Add-Ins.
     fdescs = smgr.createInstanceWithContext("com.sun.star.sheet.FunctionDescriptions", ctx)
     registered_names = {
         {p.Name: p.Value for p in fdescs.getByIndex(i)}.get("Name")
@@ -49,11 +49,13 @@ def main():
     }
     value_registered = "FRED.VALUE" in registered_names
     description_registered = "FRED.DESCRIPTION" in registered_names
+    series_registered = "FRED.SERIES" in registered_names
 
     print("FRED.VALUE registered:", value_registered)
     print("FRED.DESCRIPTION registered:", description_registered)
+    print("FRED.SERIES registered:", series_registered)
 
-    ok = value_registered and description_registered
+    ok = value_registered and description_registered and series_registered
 
     if os.environ.get("FRED_API_KEY"):
         doc = desktop.loadComponentFromURL("private:factory/scalc", "_blank", 0, ())
@@ -63,14 +65,25 @@ def main():
             value_cell.setFormula('=FRED.VALUE("GDP")')
             desc_cell = sheet.getCellByPosition(0, 1)
             desc_cell.setFormula('=FRED.DESCRIPTION("GDP")')
+
+            series_range = sheet.getCellRangeByName("A3:B6")
+            series_range.setArrayFormula('=FRED.SERIES("GDP";"2023-01-01";"2023-12-31")')
+
             doc.calculateAll()
 
             value_ok = value_cell.getError() == 0 and value_cell.getValue() > 0
             desc_ok = desc_cell.getError() == 0 and len(desc_cell.getString()) > 0
+            series_ok = (
+                sheet.getCellByPosition(0, 2).getError() == 0
+                and sheet.getCellByPosition(1, 2).getValue() > 0
+            )
 
             print("FRED.VALUE(\"GDP\") ->", value_cell.getValue(), "PASS" if value_ok else "FAIL")
             print("FRED.DESCRIPTION(\"GDP\") ->", desc_cell.getString(), "PASS" if desc_ok else "FAIL")
-            ok = ok and value_ok and desc_ok
+            print("FRED.SERIES(\"GDP\";...) first row ->",
+                  sheet.getCellByPosition(0, 2).getValue(), sheet.getCellByPosition(1, 2).getValue(),
+                  "PASS" if series_ok else "FAIL")
+            ok = ok and value_ok and desc_ok and series_ok
         finally:
             doc.close(False)
     else:
