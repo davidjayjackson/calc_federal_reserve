@@ -1,0 +1,4 @@
+.~lock.*#
+/build/
+__pycache__/
+/.claude/

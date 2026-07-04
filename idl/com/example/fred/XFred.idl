@@ -1,0 +1,46 @@
+#include <com/sun/star/uno/XInterface.idl>
+
+module com { module example { module fred {
+
+    /** Add-in interface for FRED (Federal Reserve Bank of St. Louis
+        Economic Data) functions. */
+    interface XFred
+    {
+        interface ::com::sun::star::uno::XInterface;
+
+        /** Looks up a FRED series observation.
+
+            @param seriesId
+                the FRED series ID, e.g. "GDP", "UNRATE", "CPIAUCSL".
+
+            @param date
+                optional. The as-of date, as a Calc date value or an
+                "YYYY-MM-DD" string. Declared as <em>any</em> so it may be
+                omitted, in which case the most recent available
+                observation is returned; otherwise the most recent
+                observation on or before this date is returned.
+
+            @returns
+                the numeric observation value.
+         */
+        double value( [in] string seriesId, [in] any date );
+
+        /** Looks up a metadata field describing a FRED series.
+
+            @param seriesId
+                the FRED series ID, e.g. "GDP", "UNRATE", "CPIAUCSL".
+
+            @param field
+                optional. Which metadata field to return: "title" (default),
+                "units", "units_short", "frequency", "frequency_short",
+                "seasonal_adjustment", "seasonal_adjustment_short", "notes",
+                "last_updated", "observation_start", "observation_end" or
+                "popularity". Declared as <em>any</em> so it may be omitted.
+
+            @returns
+                the requested metadata field, as text.
+         */
+        string description( [in] string seriesId, [in] any field );
+    };
+
+}; }; };
