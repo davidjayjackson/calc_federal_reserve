@@ -62,8 +62,9 @@ directory structure, not from the file's own `module {}` block.
 
 **`src/fred_impl.py` implements that interface** as a `unohelper.Base`
 subclass registered as both `com.example.fred.FredImpl` and the generic
-`com.sun.star.sheet.AddIn` service. `date` and `field` are typed `any` in
-the IDL so they arrive as Python `None` when the formula omits them.
+`com.sun.star.sheet.AddIn` service. `date`, `field` and `apiKey` are typed
+`any` in the IDL so they arrive as Python `None` when the formula omits
+them.
 
 **No third-party HTTP library is used or needed.** `fred_impl.py` runs
 under LibreOffice's *own bundled* CPython interpreter
@@ -80,7 +81,18 @@ responses by URL** for `OBSERVATIONS_CACHE_TTL` (5 min) / `METADATA_CACHE_TTL`
 (1 hour) seconds. Calc can re-evaluate the same formula on every keystroke
 or recalculation; without this, a sheet with several `FRED.*` formulas
 would hammer the FRED API (which is rate-limited) far more than the data
-actually changes.
+actually changes. This cache is process-local and gets no benefit from
+persisting across LibreOffice restarts.
+
+**Calc always recalculates Add-In function cells on file open** — they're
+treated as volatile, unlike ordinary formulas whose last computed value is
+trusted from the saved file. This showed up while building
+`examples/FRED_Demo.ods`: computing real values at build time and then
+saving them didn't help, because reopening the file recalculates from
+scratch anyway and shows `#VALUE!` if no key is available at that moment.
+`tools/build_demo.py` still computes real values during the build (as a
+sanity check that the sheet actually works), but don't expect that to
+translate into cached values a user sees without their own key.
 
 **`registration/CalcAddIns.xcu` is what actually populates the Function
 Wizard** — display names, descriptions, category ("Add-In"), and
@@ -96,10 +108,17 @@ to its final path inside the package (`types/`, `python/`, `config/`).
 
 ## API key
 
-`FRED_API_KEY` must be set in the environment LibreOffice itself runs in —
-not just a terminal you happened to export it in, since a `soffice`
-launched from a desktop icon doesn't inherit that shell's environment. See
-README.md's Setup section for the two reliable ways to make that true.
+Both functions take an optional trailing `api_key` argument
+(`_resolve_api_key` in `fred_impl.py`); if omitted, `FRED_API_KEY` is read
+from the environment instead. The env var must be set in the environment
+LibreOffice itself runs in — not just a terminal you happened to export it
+in, since a `soffice` launched from a desktop icon doesn't inherit that
+shell's environment. This bit a real user during development: they'd
+exported the var in a terminal after LibreOffice was already running, so
+the running `soffice.bin` process never saw it — confirmed by reading
+`/proc/<pid>/environ` directly, which is the fastest way to debug this
+class of issue rather than guessing about shell/login semantics. See
+README.md's Setup section for both ways to supply the key.
 
 ## Versioning
 

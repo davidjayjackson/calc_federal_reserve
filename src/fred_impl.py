@@ -85,13 +85,17 @@ def _cached_get(url, ttl):
     return data
 
 
-def _api_key():
+def _resolve_api_key(explicit):
+    """Uses the api_key formula argument if given, else FRED_API_KEY."""
+    if isinstance(explicit, str) and explicit.strip():
+        return explicit.strip()
     key = os.environ.get("FRED_API_KEY")
     if not key:
         raise FredError(
-            "FRED_API_KEY environment variable is not set. Get a free key "
-            "at https://fred.stlouisfed.org/docs/api/api_key.html and "
-            "export it in the environment LibreOffice is launched from."
+            "no API key: pass one as the api_key argument, or set the "
+            "FRED_API_KEY environment variable LibreOffice is launched "
+            "with. Get a free key at "
+            "https://fred.stlouisfed.org/docs/api/api_key.html"
         )
     return key
 
@@ -108,10 +112,10 @@ def _as_iso_date(value):
     raise FredError("date must be a date value or an 'YYYY-MM-DD' string")
 
 
-def _fetch_value(series_id, iso_date):
+def _fetch_value(series_id, iso_date, api_key):
     params = {
         "series_id": series_id,
-        "api_key": _api_key(),
+        "api_key": api_key,
         "file_type": "json",
         "sort_order": "desc",
         "limit": "10",
@@ -130,14 +134,14 @@ def _fetch_value(series_id, iso_date):
     raise FredError("no observations found for series '%s'%s" % (series_id, where))
 
 
-def _fetch_description(series_id, field):
+def _fetch_description(series_id, field, api_key):
     field = (field or "title").strip().lower()
     if field not in DESCRIPTION_FIELDS:
         raise FredError("field must be one of: %s" % ", ".join(DESCRIPTION_FIELDS))
 
     params = {
         "series_id": series_id,
-        "api_key": _api_key(),
+        "api_key": api_key,
         "file_type": "json",
     }
     url = "%s/series?%s" % (API_BASE, urllib.parse.urlencode(params))
@@ -157,11 +161,13 @@ class FredAddIn(unohelper.Base, XFred, XAddIn, XServiceName):
         self._locale = None
 
     # --- XFred ------------------------------------------------------------
-    def value(self, seriesId, date):
-        return _fetch_value(seriesId.strip().upper(), _as_iso_date(date))
+    def value(self, seriesId, date, apiKey):
+        return _fetch_value(
+            seriesId.strip().upper(), _as_iso_date(date), _resolve_api_key(apiKey))
 
-    def description(self, seriesId, field):
-        return _fetch_description(seriesId.strip().upper(), field)
+    def description(self, seriesId, field, apiKey):
+        return _fetch_description(
+            seriesId.strip().upper(), field, _resolve_api_key(apiKey))
 
     # --- XAddIn -------------------------------------------------------------
     # Function/argument metadata is supplied by CalcAddIns.xcu, so these
@@ -183,24 +189,29 @@ class FredAddIn(unohelper.Base, XFred, XAddIn, XServiceName):
 
     def getDisplayArgumentName(self, aProgrammaticName, nArgument):
         names = {
-            "value": ("series_id", "date"),
-            "description": ("series_id", "field"),
+            "value": ("series_id", "date", "api_key"),
+            "description": ("series_id", "field", "api_key"),
         }
         args = names.get(aProgrammaticName, ())
         return args[nArgument] if 0 <= nArgument < len(args) else ""
 
     def getArgumentDescription(self, aProgrammaticName, nArgument):
+        api_key_desc = (
+            "Optional. A FRED API key. Defaults to the FRED_API_KEY environment variable."
+        )
         descs = {
             "value": (
                 "The FRED series ID, e.g. \"GDP\", \"UNRATE\", \"CPIAUCSL\".",
                 "Optional. Returns the most recent observation on or before this date. "
                 "Defaults to the most recent available observation.",
+                api_key_desc,
             ),
             "description": (
                 "The FRED series ID, e.g. \"GDP\", \"UNRATE\", \"CPIAUCSL\".",
                 "Optional. Metadata field: title (default), units, units_short, frequency, "
                 "frequency_short, seasonal_adjustment, seasonal_adjustment_short, notes, "
                 "last_updated, observation_start, observation_end, popularity.",
+                api_key_desc,
             ),
         }
         args = descs.get(aProgrammaticName, ())

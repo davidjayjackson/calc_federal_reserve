@@ -20,10 +20,15 @@ module com { module example { module fred {
                 observation is returned; otherwise the most recent
                 observation on or before this date is returned.
 
+            @param apiKey
+                optional. A FRED API key. Declared as <em>any</em> so it may
+                be omitted, in which case the FRED_API_KEY environment
+                variable is used instead.
+
             @returns
                 the numeric observation value.
          */
-        double value( [in] string seriesId, [in] any date );
+        double value( [in] string seriesId, [in] any date, [in] any apiKey );
 
         /** Looks up a metadata field describing a FRED series.
 
@@ -37,10 +42,15 @@ module com { module example { module fred {
                 "last_updated", "observation_start", "observation_end" or
                 "popularity". Declared as <em>any</em> so it may be omitted.
 
+            @param apiKey
+                optional. A FRED API key. Declared as <em>any</em> so it may
+                be omitted, in which case the FRED_API_KEY environment
+                variable is used instead.
+
             @returns
                 the requested metadata field, as text.
          */
-        string description( [in] string seriesId, [in] any field );
+        string description( [in] string seriesId, [in] any field, [in] any apiKey );
     };
 
 }; }; };

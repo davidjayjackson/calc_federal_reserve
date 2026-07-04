@@ -37,6 +37,14 @@
                 <value xml:lang="en">Optional. Returns the most recent observation on or before this date. Defaults to the most recent available observation.</value>
               </prop>
             </node>
+            <node oor:name="apiKey" oor:op="replace">
+              <prop oor:name="DisplayName">
+                <value xml:lang="en">api_key</value>
+              </prop>
+              <prop oor:name="Description">
+                <value xml:lang="en">Optional. A FRED API key. Defaults to the FRED_API_KEY environment variable.</value>
+              </prop>
+            </node>
           </node>
         </node>
         <node oor:name="description" oor:op="replace">
@@ -67,6 +75,14 @@
               </prop>
               <prop oor:name="Description">
                 <value xml:lang="en">Optional. Metadata field: title (default), units, units_short, frequency, frequency_short, seasonal_adjustment, seasonal_adjustment_short, notes, last_updated, observation_start, observation_end, popularity.</value>
+              </prop>
+            </node>
+            <node oor:name="apiKey" oor:op="replace">
+              <prop oor:name="DisplayName">
+                <value xml:lang="en">api_key</value>
+              </prop>
+              <prop oor:name="Description">
+                <value xml:lang="en">Optional. A FRED API key. Defaults to the FRED_API_KEY environment variable.</value>
               </prop>
             </node>
           </node>
