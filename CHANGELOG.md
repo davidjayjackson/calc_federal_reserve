@@ -13,3 +13,7 @@
 - Added `FRED.SERIES(series_id; start_date; [end_date]; [api_key])`,
   returning a whole range of observations as a (date, value) matrix for use
   as an array formula.
+- Added `macros/FredMacros.bas` (installed via `tools/install_macro.py`), a
+  Basic macro that dumps a series into the sheet as static values instead
+  of a live formula - no ongoing dependency on the add-in, network, or key
+  once written.

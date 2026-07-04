@@ -117,6 +117,61 @@ path and largely redundant with the `.xcu` in practice.
 `build/oxt/` and zipped. `registration/manifest.xml` maps each staged file
 to its final path inside the package (`types/`, `python/`, `config/`).
 
+## The "dump as static table" macro
+
+`macros/FredMacros.bas` is a Basic macro (`FredDumpSeries`, plus a helper
+`FredWriteSeries` and `FredCleanError`) for one-shot snapshots: it prompts
+for series ID/dates/key via `InputBox`, then writes plain static values
+(`setValue`, not `setFormula`) starting at whatever cell is selected -
+unlike `FRED.SERIES`, the result has no ongoing dependency on the add-in,
+network, or key once written, and needs no Ctrl+Shift+Enter.
+
+**`FredWriteSeries` calls `createUnoService("com.example.fred.FredImpl")`
+directly** rather than duplicating the HTTP/parsing logic - `FredImpl` is
+registered under both `com.example.fred.FredImpl` (a plain instantiable
+service) and `com.sun.star.sheet.AddIn`, so Basic can create and call it
+like any other UNO service, sidestepping the Calc formula/cell layer
+entirely. Confirmed empirically (see below) rather than assumed, since this
+isn't the primary documented use of an Add-In service.
+
+**`tools/install_macro.py` installs the library programmatically** via
+`smgr.createInstanceWithContext("com.sun.star.script.ApplicationScriptLibraryContainer", ctx)`
+(this is the *application-level* / "My Macros" Basic library storage,
+despite the service name looking document-scoped) rather than shipping a
+hand-crafted `Basic/` folder inside the `.oxt` - packaging a Basic library
+into an extension requires exact `script.xlb`/`.xba` XML that's easy to get
+subtly wrong and hard to debug; driving the real `XLibraryContainer` API
+(`createLibrary`, `insertByName`, `storeLibraries()`) gets the same result
+with much less risk. `install_macro.py` always removes and recreates the
+library, so it's safe to re-run after editing the `.bas` source - don't
+call `replaceByName` on a library that may be in a bad state (a module that
+failed to compile on `insertByName` can leave the library object
+throwing `WrappedTargetException` on every subsequent call; discovered
+while testing invalid-series error handling - the fix was a fresh
+`removeLibrary`/`createLibrary` rather than reusing the handle).
+
+**Two Calc API surprises found while building this, worth remembering if
+touching it again:**
+- There's no `ViewCursor` on a Calc controller (that's a Writer-only
+  concept). The correct way to get the "current cell" in Calc is
+  `oDoc.CurrentController.Selection` - a single selected cell supports
+  `.RangeAddress` (via `XCellRangeAddressable`) just like a multi-cell
+  range does, so no need to branch on selection shape.
+- A Python exception raised inside a UNO service method, when the method
+  is called from Basic, surfaces as a catchable Basic runtime error (`On
+  Error GoTo` works) - but `Error$` dumps the *entire* pyuno-formatted
+  block (exception type + message + full Python traceback), not just the
+  message. `FredCleanError` in the `.bas` file strips it down to the text
+  between `Message:` and `, traceback follows`.
+
+Tested via the same headless-instance-over-UNO approach as
+`tools/test_addin.py`: install the library, then invoke
+`FredWriteSeries`/`FredCleanError` directly by name via
+`com.sun.star.script.provider.MasterScriptProviderFactory` with explicit
+arguments (bypassing the `InputBox` calls in `FredDumpSeries`, which would
+otherwise hang forever waiting for input that never comes in `--headless`
+mode - there is no way to drive `InputBox`/`MsgBox` from an automated test).
+
 ## API key
 
 Both functions take an optional trailing `api_key` argument

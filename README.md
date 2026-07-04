@@ -111,6 +111,29 @@ category and in formula autocomplete.
 
 To remove: `unopkg remove com.example.fred`.
 
+### 4. (Optional) Install the "dump as static table" macro
+
+`FRED.SERIES` is a live formula — it re-fetches on every recalculation and
+needs Ctrl+Shift+Enter array-formula entry. If you just want a one-time
+snapshot of a series as plain static values (no formulas, no ongoing
+dependency on the add-in, network or your key), install the bundled Basic
+macro once:
+
+```sh
+soffice --accept="socket,host=localhost,port=2002;urp;" &
+/usr/lib64/libreoffice/program/python tools/install_macro.py
+```
+
+This adds a `FredMacros` library under My Macros. To use it: select the
+top-left cell you want the table to start at, then run **Tools ▸ Macros ▸
+Run Macro… ▸ My Macros ▸ FredMacros ▸ Module1 ▸ FredDumpSeries**. It prompts
+for a series ID, start date and end date (blank = most recent), uses
+`FRED_API_KEY` if set or otherwise prompts for a key, and writes the
+(date, value) pairs as plain numbers starting at your selected cell — no
+array-formula entry needed, and the result no longer depends on the add-in
+once written. Re-run `tools/install_macro.py` any time you update
+`macros/FredMacros.bas`; it replaces the library each time.
+
 ## Demo
 
 `examples/FRED_Demo.ods` shows both functions in use: a table of popular
@@ -136,6 +159,8 @@ for LibreOffice — you'll see `#VALUE!` in every data cell until then.
   instance over UNO; see `CLAUDE.md` for how to run it.
 - `tools/build_demo.py` — (re)generates `examples/FRED_Demo.ods`; also
   driven over UNO, see the script's docstring.
+- `macros/FredMacros.bas` — the "dump as static table" Basic macro source;
+  `tools/install_macro.py` installs it into My Macros (see step 4 above).
 
 The `.venv` under the LibreOffice directory (`../.venv`) is for local
 analysis/dev tooling, not for the add-in itself — see `CLAUDE.md` for why.
