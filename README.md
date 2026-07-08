@@ -159,6 +159,12 @@ treated as volatile, unlike ordinary formulas), so this only shows real
 values once you've either pasted a key into `B3` or have `FRED_API_KEY` set
 for LibreOffice — you'll see `#VALUE!` in every data cell until then.
 
+## Related add-ins
+
+Also see [Eurostat Data for Calc](https://github.com/davidjayjackson/java_eurostats) — adds a
+`EUROSTATDATA()` function for pulling Eurostat data straight into a sheet. [Latest
+release](https://github.com/davidjayjackson/java_eurostats/releases/latest).
+
 ## Development
 
 - `idl/` — the UNO interface (`XFred`) Calc calls into.
